@@ -21,16 +21,18 @@ public class SnakeGame extends ApplicationAdapter {
 
     @Override
     public void create() {
-        // Ao invés de imagens complexas, usamos ShapeRenderer para desenhar quadrados sólidos
+        // Ao invés de imagens complexas, usamos ShapeRenderer para desenhar quadrados
+        // sólidos
         shapeRenderer = new ShapeRenderer();
-        
-        // Inicializa a cobra com apenas 1 pedaço no centro do mapa (posição 10, 10 da nossa grade)
+
+        // Inicializa a cobra com apenas 1 pedaço no centro do mapa (posição 10, 10 da
+        // nossa grade)
         snake = new LinkedList<>();
         snake.add(new Vector2(10, 10));
-        
+
         // Começa movendo para a direita (x = 1, y = 0)
         direction = new Vector2(1, 0);
-        
+
         // Coloca a maçã em uma posição aleatória inicial
         apple = new Vector2(15, 10);
     }
@@ -39,31 +41,37 @@ public class SnakeGame extends ApplicationAdapter {
     public void render() {
         // --- LER COMANDOS DO JOGADOR ---
         // Se apertar pra cima e não estiver descendo, vai pra cima
-        if (Gdx.input.isKeyJustPressed(Input.Keys.UP) && direction.y != -1) direction.set(0, 1);
-        if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN) && direction.y != 1) direction.set(0, -1);
-        if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT) && direction.x != 1) direction.set(-1, 0);
-        if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT) && direction.x != -1) direction.set(1, 0);
+        if (Gdx.input.isKeyJustPressed(Input.Keys.UP) && direction.y != -1)
+            direction.set(0, 1);
+        if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN) && direction.y != 1)
+            direction.set(0, -1);
+        if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT) && direction.x != 1)
+            direction.set(-1, 0);
+        if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT) && direction.x != -1)
+            direction.set(1, 0);
 
         // --- LÓGICA DE MOVIMENTO ---
         timer += Gdx.graphics.getDeltaTime(); // Acumula o tempo que passou desde o último frame
-        if (timer > 0.15f) { // Só move a cada 0.15 segundos (dita a velocidade do jogo)
+        if (timer > 0.05f) { // Só move a cada 0.15 segundos (dita a velocidade do jogo)
             timer = 0; // Zera o relógio
-            
+
             // Pega a posição atual da cabeça e calcula pra onde ela vai agora
             Vector2 head = snake.getFirst();
             Vector2 newHead = new Vector2(head.x + direction.x, head.y + direction.y);
-            
+
             // Adiciona a nova cabeça na frente do corpo
             snake.addFirst(newHead);
-            
+
             // Verifica se comeu a maçã
             if (newHead.equals(apple)) {
-                // Se comeu, não removemos o rabo (a cobra cresce!) e sorteamos nova posição pra maçã
+                // Se comeu, não removemos o rabo (a cobra cresce!) e sorteamos nova posição pra
+                // maçã
                 int maxGradeX = (Gdx.graphics.getWidth() / TILE_SIZE) - 1;
                 int maxGradeY = (Gdx.graphics.getHeight() / TILE_SIZE) - 1;
                 apple.set(MathUtils.random(0, maxGradeX), MathUtils.random(0, maxGradeY));
             } else {
-                // Se NÃO comeu a maçã, removemos o último pedaço do rabo para a cobra andar sem crescer infinitamente
+                // Se NÃO comeu a maçã, removemos o último pedaço do rabo para a cobra andar sem
+                // crescer infinitamente
                 snake.removeLast();
             }
         }
