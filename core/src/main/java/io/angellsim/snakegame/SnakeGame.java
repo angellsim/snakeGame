@@ -59,19 +59,30 @@ public class SnakeGame extends ApplicationAdapter {
             Vector2 head = snake.getFirst();
             Vector2 newHead = new Vector2(head.x + direction.x, head.y + direction.y);
 
-            // Adiciona a nova cabeça na frente do corpo
+            // --- LÓGICA DE ATRAVESSAR A PAREDE ---
+            // Primeiro, calculamos qual é a última "casa" válida da nossa grade
+            int maxGradeX = Gdx.graphics.getWidth() / TILE_SIZE;
+            int maxGradeY = Gdx.graphics.getHeight() / TILE_SIZE;
+
+            // Se saiu pela esquerda (menor que zero), aparece na extrema direita
+            if (newHead.x < 0) newHead.x = maxGradeX - 1;
+            // Se passou da extrema direita, aparece na esquerda (zero)
+            else if (newHead.x >= maxGradeX) newHead.x = 0;
+
+            // Se saiu por baixo (menor que zero), aparece no topo
+            if (newHead.y < 0) newHead.y = maxGradeY - 1;
+            // Se saiu pelo topo, aparece embaixo (zero)
+            else if (newHead.y >= maxGradeY) newHead.y = 0;
+
+            // Adiciona a nova cabeça na frente do corpo (agora com a posição corrigida se ela atravessou)
             snake.addFirst(newHead);
 
             // Verifica se comeu a maçã
             if (newHead.equals(apple)) {
-                // Se comeu, não removemos o rabo (a cobra cresce!) e sorteamos nova posição pra
-                // maçã
-                int maxGradeX = (Gdx.graphics.getWidth() / TILE_SIZE) - 1;
-                int maxGradeY = (Gdx.graphics.getHeight() / TILE_SIZE) - 1;
-                apple.set(MathUtils.random(0, maxGradeX), MathUtils.random(0, maxGradeY));
+                // Se comeu, não removemos o rabo (a cobra cresce!) e sorteamos nova posição pra maçã
+                apple.set(MathUtils.random(0, maxGradeX - 1), MathUtils.random(0, maxGradeY - 1));
             } else {
-                // Se NÃO comeu a maçã, removemos o último pedaço do rabo para a cobra andar sem
-                // crescer infinitamente
+                // Se NÃO comeu a maçã, removemos o último pedaço do rabo para a cobra andar sem crescer infinitamente
                 snake.removeLast();
             }
         }
