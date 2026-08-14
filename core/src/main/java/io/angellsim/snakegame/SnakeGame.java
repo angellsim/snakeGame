@@ -12,7 +12,9 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFontParameter;
+import com.badlogic.gdx.Preferences;
 import java.util.LinkedList;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 
 public class SnakeGame extends ApplicationAdapter {
 
@@ -26,6 +28,18 @@ public class SnakeGame extends ApplicationAdapter {
     private final int TILE_SIZE = 20; // O tamanho de cada "quadradinho" da grade em pixels
     private float timer = 0; // Para controlar a velocidade da cobra
     private boolean isGameOver = false;
+    private int score = 0;
+    private int highScore = 0;
+    private BitmapFont fontScore;
+    private Preferences prefs;
+    
+    // Sistema de Boost e Texto Flutuante
+    private int normalApplesEaten = 0;
+    private int boostApplesLeft = 0;
+    private String floatingText = "";
+    private float floatingTextX = 0;
+    private float floatingTextY = 0;
+    private float floatingTextTimer = 0;
 
     @Override
     public void create() {
@@ -45,7 +59,15 @@ public class SnakeGame extends ApplicationAdapter {
         parameter.size = 16;
         fontInstruction = generator.generateFont(parameter);
         
+        // Fonte para o placar reduzida
+        parameter.size = 12;
+        fontScore = generator.generateFont(parameter);
+        
         generator.dispose(); // Descarta o gerador após criar as fontes
+        
+        // Inicializa as preferências e carrega o recorde salvo
+        prefs = Gdx.app.getPreferences("SnakeGamePrefs");
+        highScore = prefs.getInteger("highscore", 0);
         
         initGame();
     }
@@ -63,6 +85,10 @@ public class SnakeGame extends ApplicationAdapter {
         
         timer = 0;
         isGameOver = false;
+        score = 0;
+        normalApplesEaten = 0;
+        boostApplesLeft = 0;
+        floatingTextTimer = 0;
     }
 
     @Override
@@ -70,14 +96,27 @@ public class SnakeGame extends ApplicationAdapter {
         if (isGameOver) {
             ScreenUtils.clear(0, 0, 0, 1);
             batch.begin();
-            // Desenha a mensagem de Game Over no centro da tela (em Vermelho)
-            fontGameOver.setColor(Color.RED);
-            // Ajustando a posição (valores aproximados baseados no tamanho da fonte)
-            fontGameOver.draw(batch, "GAME OVER", Gdx.graphics.getWidth() / 2f - 140, Gdx.graphics.getHeight() / 2f + 40);
             
-            // Desenha a instrução (em Branco)
+            // Usamos GlyphLayout para calcular a largura exata de cada texto e centralizar perfeitamente
+            GlyphLayout layout = new GlyphLayout();
+            
+            // Desenha a mensagem de Game Over no centro e um pouco para cima
+            fontGameOver.setColor(Color.RED);
+            layout.setText(fontGameOver, "GAME OVER");
+            fontGameOver.draw(batch, "GAME OVER", (Gdx.graphics.getWidth() - layout.width) / 2f, Gdx.graphics.getHeight() / 2f + 90);
+            
+            // Desenha a instrução exatamente no meio
             fontInstruction.setColor(Color.WHITE);
-            fontInstruction.draw(batch, "Pressione ESPACO para reiniciar", Gdx.graphics.getWidth() / 2f - 240, Gdx.graphics.getHeight() / 2f - 20);
+            layout.setText(fontInstruction, "Pressione ESPACO para reiniciar");
+            fontInstruction.draw(batch, "Pressione ESPACO para reiniciar", (Gdx.graphics.getWidth() - layout.width) / 2f, Gdx.graphics.getHeight() / 2f + 10);
+            
+            // Desenha a pontuação final e o recorde logo abaixo
+            fontScore.setColor(Color.YELLOW);
+            layout.setText(fontScore, "PONTOS: " + score);
+            fontScore.draw(batch, "PONTOS: " + score, (Gdx.graphics.getWidth() - layout.width) / 2f, Gdx.graphics.getHeight() / 2f - 40);
+            
+            layout.setText(fontScore, "RECORD: " + highScore);
+            fontScore.draw(batch, "RECORD: " + highScore, (Gdx.graphics.getWidth() - layout.width) / 2f, Gdx.graphics.getHeight() / 2f - 70);
             
             batch.end();
             
@@ -99,8 +138,16 @@ public class SnakeGame extends ApplicationAdapter {
             direction.set(1, 0);
 
         // --- LÓGICA DE MOVIMENTO ---
-        timer += Gdx.graphics.getDeltaTime(); // Acumula o tempo que passou desde o último frame
-        if (timer > 0.05f) { // Só move a cada 0.15 segundos (dita a velocidade do jogo)
+        float deltaTime = Gdx.graphics.getDeltaTime();
+        timer += deltaTime; // Acumula o tempo que passou desde o último frame
+        
+        // Animação do texto flutuante
+        if (floatingTextTimer > 0) {
+            floatingTextTimer -= deltaTime;
+            floatingTextY += 50 * deltaTime; // Sobe o texto suavemente
+        }
+        
+        if (timer > 0.05f) { // Só move a cada 0.05 segundos (dita a velocidade do jogo)
             timer = 0; // Zera o relógio
 
             // Pega a posição atual da cabeça e calcula pra onde ela vai agora
@@ -133,6 +180,13 @@ public class SnakeGame extends ApplicationAdapter {
             // Verifica se bateu no próprio corpo
             if (snake.contains(newHead)) {
                 isGameOver = true;
+                
+                // Atualiza e salva o recorde se a pontuação atual for maior
+                if (score > highScore) {
+                    highScore = score;
+                    prefs.putInteger("highscore", highScore);
+                    prefs.flush(); // Salva no disco imediatamente
+                }
             }
 
             // Adiciona a nova cabeça na frente do corpo
@@ -141,6 +195,28 @@ public class SnakeGame extends ApplicationAdapter {
             if (ateApple) {
                 // Se comeu, sorteamos nova posição pra maçã
                 apple.set(MathUtils.random(0, maxGradeX - 1), MathUtils.random(0, maxGradeY - 1));
+                
+                int pointsGained = 100;
+                
+                if (boostApplesLeft > 0) {
+                    pointsGained = 150;
+                    boostApplesLeft--;
+                } else {
+                    normalApplesEaten++;
+                    if (normalApplesEaten == 5) {
+                        // Após comer 5 normais, ativa o boost para as próximas 3
+                        boostApplesLeft = 3;
+                        normalApplesEaten = 0; // Reseta a contagem
+                    }
+                }
+                
+                score += pointsGained; // Aumenta a pontuação
+                
+                // Prepara o texto flutuante no local da maçã
+                floatingText = "+" + pointsGained;
+                floatingTextX = newHead.x * TILE_SIZE;
+                floatingTextY = newHead.y * TILE_SIZE + TILE_SIZE; // Um pouco acima da cabeça
+                floatingTextTimer = 1.0f; // Fica visível por 1 segundo
             }
         }
 
@@ -159,6 +235,25 @@ public class SnakeGame extends ApplicationAdapter {
         }
 
         shapeRenderer.end();
+        
+        // Desenha o placar (depois do ShapeRenderer, usa o SpriteBatch)
+        batch.begin();
+        fontScore.setColor(Color.WHITE);
+        // Recuo ajustado de 140 para 180 para caber tranquilamente 5 dígitos (ex: 10000)
+        fontScore.draw(batch, "PONTOS: " + score, Gdx.graphics.getWidth() - 180, Gdx.graphics.getHeight() - 10);
+        fontScore.draw(batch, "RECORD: " + highScore, Gdx.graphics.getWidth() - 180, Gdx.graphics.getHeight() - 30);
+        
+        // Desenha o texto flutuante se o timer estiver ativo
+        if (floatingTextTimer > 0) {
+            if (floatingText.equals("+150")) {
+                fontScore.setColor(Color.GOLD);
+            } else {
+                fontScore.setColor(Color.GREEN);
+            }
+            fontScore.draw(batch, floatingText, floatingTextX, floatingTextY);
+        }
+        
+        batch.end();
     }
 
     @Override
@@ -167,5 +262,6 @@ public class SnakeGame extends ApplicationAdapter {
         batch.dispose();
         fontGameOver.dispose();
         fontInstruction.dispose();
+        fontScore.dispose();
     }
 }
