@@ -27,18 +27,26 @@ Um clone moderno e polido do clássico **Jogo da Cobrinha**, desenvolvido do zer
 
 ---
 
-## 🚀 Como Executar o Jogo (Tutorial)
+## 🚀 Como Jogar (Tutorial)
 
-### Pré-requisitos
-Para rodar esse projeto na sua máquina, você vai precisar de:
+### Opção 1: Jogar Imediatamente (Mais Fácil! ✨)
+Se você quer apenas jogar sem precisar configurar um ambiente de desenvolvimento:
+1. Acesse a aba de **[Releases](https://github.com/angellsim/snakeGame/releases)** aqui no repositório do GitHub.
+2. Baixe o arquivo `SnakeGame-Windows.zip`.
+3. Extraia o arquivo zip (clique com o botão direito -> Extrair Tudo).
+4. Entre na pasta extraída e dê 2 cliques no arquivo `SnakeGame.exe`. O jogo vai abrir magicamente, sem precisar instalar nada!
+
+### Opção 2: Compilar o Código (Para Desenvolvedores 💻)
+Se você quiser rodar pelo código fonte:
+
+**Pré-requisitos:**
 1. **Java Development Kit (JDK)** instalado (versão 8 ou superior).
 2. Uma IDE como **IntelliJ IDEA**, **Eclipse** ou **VS Code** com suporte a Java.
-3. Git (opcional, para clonar o repositório).
 
-### Passos para rodar
+**Passos:**
 1. **Clone o repositório:**
    ```bash
-   git clone https://github.com/SEU_USUARIO/JogoDaCobrinha.git
+   git clone https://github.com/angellsim/snakeGame.git
    cd JogoDaCobrinha
    ```
 2. **Abra na sua IDE:**
