@@ -82,4 +82,4 @@ Durante o desenvolvimento deste jogo, foram explorados diversos conceitos import
 - **Estruturas de Dados:** Uso estratégico da `LinkedList` em Java para simular o corpo da cobra, inserindo a cabeça na frente e removendo o último segmento ao andar.
 
 ---
-Feito com ☕ e muito código por **[Alice (Angellsim)](#)**!
+Feito com ☕ e muito código por **[Alice (Angellsim)](https://github.com/angellsim)** e **[Hugo Santos (Guguim)](https://github.com/guguim)**!
