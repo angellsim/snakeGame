@@ -232,8 +232,10 @@ public class SnakeGame extends ApplicationAdapter {
             snake.addFirst(newHead);
 
             if (ateApple) {
-                // Se comeu, sorteamos nova posição pra maçã
-                apple.set(MathUtils.random(0, maxGradeX - 1), MathUtils.random(0, maxGradeY - 1));
+                // Se comeu, sorteamos nova posição pra maçã em um local que não esteja ocupado pela cobra
+                do {
+                    apple.set(MathUtils.random(0, maxGradeX - 1), MathUtils.random(0, maxGradeY - 1));
+                } while (snake.contains(apple));
 
                 int pointsGained = 100;
 
