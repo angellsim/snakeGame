@@ -18,6 +18,30 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 
 public class SnakeGame extends ApplicationAdapter {
 
+    // --- PIXEL ART MAPS (8x8 grid, cada célula = bloco 4x4 px no tile 32x32) ---
+    // Maçã: 0=bg, 1=vermelho escuro, 2=vermelho, 3=highlight (animado), 4=folha verde, 5=cabo marrom
+    private static final int[][] APPLE_MAP = {
+        {0, 0, 0, 5, 4, 0, 0, 0},
+        {0, 0, 0, 5, 4, 4, 0, 0},
+        {0, 1, 1, 2, 2, 2, 1, 0},
+        {1, 2, 2, 3, 2, 2, 2, 1},
+        {1, 2, 3, 2, 2, 2, 2, 1},
+        {1, 2, 2, 2, 2, 2, 1, 0},
+        {0, 1, 2, 2, 2, 1, 0, 0},
+        {0, 0, 1, 1, 1, 0, 0, 0},
+    };
+    // Corpo da cobra: 0=border escuro, 1=verde corpo, 2=highlight claro
+    private static final int[][] BODY_MAP = {
+        {0, 0, 1, 1, 1, 1, 0, 0},
+        {0, 1, 2, 1, 1, 1, 1, 0},
+        {1, 1, 2, 2, 1, 1, 1, 1},
+        {1, 1, 1, 1, 1, 0, 1, 1},
+        {1, 1, 0, 1, 1, 1, 1, 1},
+        {1, 1, 1, 1, 2, 2, 1, 1},
+        {0, 1, 1, 1, 1, 2, 1, 0},
+        {0, 0, 1, 1, 1, 1, 0, 0},
+    };
+
     private ShapeRenderer shapeRenderer;
     private SpriteBatch batch;
     private BitmapFont fontGameOver;
@@ -44,6 +68,7 @@ public class SnakeGame extends ApplicationAdapter {
     private float floatingTextX = 0;
     private float floatingTextY = 0;
     private float floatingTextTimer = 0;
+    private float skinTimer = 0f; // Timer contínuo para animações visuais (maçã pulsante, etc.)
 
     @Override
     public void create() {
@@ -186,6 +211,7 @@ public class SnakeGame extends ApplicationAdapter {
         // --- LÓGICA DE MOVIMENTO ---
         float deltaTime = Gdx.graphics.getDeltaTime();
         timer += deltaTime; // Acumula o tempo que passou desde o último frame
+        skinTimer += deltaTime; // Avança o timer de animações visuais
 
         // Animação do texto flutuante
         if (floatingTextTimer > 0) {
@@ -280,14 +306,92 @@ public class SnakeGame extends ApplicationAdapter {
         ScreenUtils.clear(0, 0, 0, 1); // Fundo preto
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled); // Prepara para pintar formas preenchidas
 
-        // 1. Pinta a maçã (Vermelha)
-        shapeRenderer.setColor(Color.RED);
-        shapeRenderer.rect(apple.x * TILE_SIZE, apple.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        // --- PIXEL ART RENDERING ---
+        // Cada tile 32x32 é dividido em grade 8x8; cada célula = bloco P×P pixels
+        final int P = 4; // tamanho em pixels de cada "pixel" da arte
+        final int G = 8; // quantidade de células por lado da grade
 
-        // 2. Pinta a cobra (Verde)
-        shapeRenderer.setColor(Color.GREEN);
+        // 1. Maçã — mapa de pixels com highlight piscando
+        // O highlight (código 3) alterna entre rosa e branco usando skinTimer
+        boolean highlightOn = ((int)(skinTimer * 3f) % 2) == 0;
+        float ax = apple.x * TILE_SIZE;
+        float ay = apple.y * TILE_SIZE;
+        for (int row = 0; row < G; row++) {
+            // row=0 do array = topo visual → renderiza no topo do tile (y maior)
+            float ry = ay + (G - 1 - row) * P;
+            for (int col = 0; col < G; col++) {
+                int code = APPLE_MAP[row][col];
+                switch (code) {
+                    case 0: continue; // transparente
+                    case 1: shapeRenderer.setColor(0.50f, 0.04f, 0.04f, 1f); break; // vermelho escuro
+                    case 2: shapeRenderer.setColor(0.88f, 0.14f, 0.14f, 1f); break; // vermelho
+                    case 3: // highlight piscante
+                        if (highlightOn) shapeRenderer.setColor(1.00f, 0.75f, 0.75f, 1f);
+                        else             shapeRenderer.setColor(0.95f, 0.50f, 0.50f, 1f);
+                        break;
+                    case 4: shapeRenderer.setColor(0.10f, 0.60f, 0.10f, 1f); break; // folha
+                    case 5: shapeRenderer.setColor(0.40f, 0.22f, 0.05f, 1f); break; // cabo
+                    default: continue;
+                }
+                shapeRenderer.rect(ax + col * P, ry, P, P);
+            }
+        }
+
+        // 2. Cobra — cabeça e corpo em pixel art
+        boolean isHead = true;
         for (Vector2 part : snake) {
-            shapeRenderer.rect(part.x * TILE_SIZE, part.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            float px = part.x * TILE_SIZE;
+            float py = part.y * TILE_SIZE;
+
+            if (isHead) {
+                // --- CABEÇA: tile verde sólido pixel a pixel com borda ---
+                for (int row = 0; row < G; row++) {
+                    float ry = py + (G - 1 - row) * P;
+                    for (int col = 0; col < G; col++) {
+                        boolean border = (row == 0 || row == G-1 || col == 0 || col == G-1);
+                        if (border) shapeRenderer.setColor(0.05f, 0.45f, 0.05f, 1f);
+                        else        shapeRenderer.setColor(0.28f, 0.92f, 0.28f, 1f);
+                        shapeRenderer.rect(px + col * P, ry, P, P);
+                    }
+                }
+                // Olhos: dois blocos 2×2 pixels; brilhinho branco no canto superior direito do olho
+                // A posição (em células da grade) depende da direção
+                int e1c, e1r, e2c, e2r;
+                if (direction.x == 1) {       // → direita
+                    e1c = 5; e1r = 2; e2c = 5; e2r = 5;
+                } else if (direction.x == -1) { // ← esquerda
+                    e1c = 2; e1r = 2; e2c = 2; e2r = 5;
+                } else if (direction.y == 1) { // ↑ cima
+                    e1c = 2; e1r = 2; e2c = 5; e2r = 2;
+                } else {                        // ↓ baixo
+                    e1c = 2; e1r = 5; e2c = 5; e2r = 5;
+                }
+                // Pupila preta (2×2 pixels)
+                shapeRenderer.setColor(0.05f, 0.05f, 0.05f, 1f);
+                shapeRenderer.rect(px + e1c * P, py + (G - 1 - e1r) * P, P * 2, P * 2);
+                shapeRenderer.rect(px + e2c * P, py + (G - 1 - e2r) * P, P * 2, P * 2);
+                // Brilho branco no canto do olho (1×1 pixel)
+                shapeRenderer.setColor(0.95f, 0.95f, 0.95f, 1f);
+                shapeRenderer.rect(px + (e1c + 1) * P, py + (G - e1r) * P, P, P);
+                shapeRenderer.rect(px + (e2c + 1) * P, py + (G - e2r) * P, P, P);
+                isHead = false;
+
+            } else {
+                // --- CORPO: mapa BODY_MAP com padrão de escamas ---
+                for (int row = 0; row < G; row++) {
+                    float ry = py + (G - 1 - row) * P;
+                    for (int col = 0; col < G; col++) {
+                        int code = BODY_MAP[row][col];
+                        switch (code) {
+                            case 0: shapeRenderer.setColor(0.04f, 0.35f, 0.04f, 1f); break; // border
+                            case 1: shapeRenderer.setColor(0.12f, 0.65f, 0.12f, 1f); break; // corpo
+                            case 2: shapeRenderer.setColor(0.22f, 0.80f, 0.22f, 1f); break; // highlight
+                            default: continue;
+                        }
+                        shapeRenderer.rect(px + col * P, ry, P, P);
+                    }
+                }
+            }
         }
 
         shapeRenderer.end();
