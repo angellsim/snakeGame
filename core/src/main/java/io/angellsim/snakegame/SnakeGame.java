@@ -26,7 +26,9 @@ public class SnakeGame extends ApplicationAdapter {
     private Vector2 apple; // Posição (x, y) da maçã
     private Vector2 direction; // Para onde a cobra está indo (direção confirmada no último tick)
     private Vector2 nextDirection; // Próxima direção solicitada pelo jogador (buffer de input)
-    private final int TILE_SIZE = 20; // O tamanho de cada "quadradinho" da grade em pixels
+    private final int TILE_SIZE = 32; // O tamanho de cada "quadradinho" da grade em pixels
+    private int gridCols; // Quantidade de colunas da grade (calculado em create())
+    private int gridRows; // Quantidade de linhas da grade (calculado em create())
     private float timer = 0; // Para controlar a velocidade da cobra
     private boolean isGameOver = false; // verifica se o player perdeu o jogo
     private boolean hasGameStarted = false;
@@ -71,6 +73,12 @@ public class SnakeGame extends ApplicationAdapter {
         // Inicializa as preferências e carrega o recorde salvo
         prefs = Gdx.app.getPreferences("SnakeGamePrefs");
         highScore = prefs.getInteger("highscore", 0);
+
+        // Calcula as dimensões da grade uma única vez, com base no tamanho real da
+        // janela.
+        // Usar campos garante que wrapping e spawn da maçã nunca divergem.
+        gridCols = Gdx.graphics.getWidth() / TILE_SIZE; // ex: 640 / 32 = 20
+        gridRows = Gdx.graphics.getHeight() / TILE_SIZE; // ex: 480 / 32 = 15
 
         initGame();
     }
@@ -185,7 +193,7 @@ public class SnakeGame extends ApplicationAdapter {
             floatingTextY += 50 * deltaTime; // Sobe o texto suavemente
         }
 
-        if (timer > 0.05f) { // Só move a cada 0.05 segundos (dita a velocidade do jogo)
+        if (timer > 0.07f) { // Só move a cada 0.05 segundos (dita a velocidade do jogo)
             timer = 0; // Zera o relógio
 
             // Aplica o próximo movimento bufferizado — só aqui a direção é confirmada
@@ -196,22 +204,20 @@ public class SnakeGame extends ApplicationAdapter {
             Vector2 newHead = new Vector2(head.x + direction.x, head.y + direction.y);
 
             // --- LÓGICA DE ATRAVESSAR A PAREDE ---
-            // Primeiro, calculamos qual é a última "casa" válida da nossa grade
-            int maxGradeX = Gdx.graphics.getWidth() / TILE_SIZE;
-            int maxGradeY = Gdx.graphics.getHeight() / TILE_SIZE;
+            // Usa gridCols/gridRows (calculados em create()) como fonte única de verdade.
 
             // Se saiu pela esquerda (menor que zero), aparece na extrema direita
             if (newHead.x < 0)
-                newHead.x = maxGradeX - 1;
+                newHead.x = gridCols - 1;
             // Se passou da extrema direita, aparece na esquerda (zero)
-            else if (newHead.x >= maxGradeX)
+            else if (newHead.x >= gridCols)
                 newHead.x = 0;
 
             // Se saiu por baixo (menor que zero), aparece no topo
             if (newHead.y < 0)
-                newHead.y = maxGradeY - 1;
+                newHead.y = gridRows - 1;
             // Se saiu pelo topo, aparece embaixo (zero)
-            else if (newHead.y >= maxGradeY)
+            else if (newHead.y >= gridRows)
                 newHead.y = 0;
 
             // Verifica se comeu a maçã
@@ -239,9 +245,11 @@ public class SnakeGame extends ApplicationAdapter {
             snake.addFirst(newHead);
 
             if (ateApple) {
-                // Se comeu, sorteamos nova posição pra maçã em um local que não esteja ocupado pela cobra
+                // Se comeu, sorteamos nova posição pra maçã em um local que não esteja ocupado
+                // pela cobra
                 do {
-                    apple.set(MathUtils.random(0, maxGradeX - 1), MathUtils.random(0, maxGradeY - 1));
+                    // gridCols-1 e gridRows-1 garantem que a maçã nunca cai fora do campo visível
+                    apple.set(MathUtils.random(0, gridCols - 1), MathUtils.random(0, gridRows - 1));
                 } while (snake.contains(apple));
 
                 int pointsGained = 100;
