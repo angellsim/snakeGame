@@ -24,7 +24,8 @@ public class SnakeGame extends ApplicationAdapter {
     private BitmapFont fontInstruction;
     private LinkedList<Vector2> snake; // Uma lista onde o primeiro item é a cabeça e o último é o rabo
     private Vector2 apple; // Posição (x, y) da maçã
-    private Vector2 direction; // Para onde a cobra está indo
+    private Vector2 direction; // Para onde a cobra está indo (direção confirmada no último tick)
+    private Vector2 nextDirection; // Próxima direção solicitada pelo jogador (buffer de input)
     private final int TILE_SIZE = 20; // O tamanho de cada "quadradinho" da grade em pixels
     private float timer = 0; // Para controlar a velocidade da cobra
     private boolean isGameOver = false; // verifica se o player perdeu o jogo
@@ -82,6 +83,7 @@ public class SnakeGame extends ApplicationAdapter {
 
         // Começa movendo para a direita (x = 1, y = 0)
         direction = new Vector2(1, 0);
+        nextDirection = new Vector2(1, 0);
 
         // Coloca a maçã em uma posição aleatória inicial
         apple = new Vector2(15, 10);
@@ -161,15 +163,17 @@ public class SnakeGame extends ApplicationAdapter {
         }
 
         // --- LER COMANDOS DO JOGADOR ---
-        // Se apertar pra cima e não estiver descendo, vai pra cima
+        // Armazena o próximo movimento solicitado em um buffer (nextDirection).
+        // A validação de inversão usa sempre a `direction` confirmada do último tick,
+        // evitando o bug de inversão causado por inputs muito rápidos entre dois ticks.
         if (Gdx.input.isKeyJustPressed(Input.Keys.UP) && direction.y != -1)
-            direction.set(0, 1);
+            nextDirection.set(0, 1);
         if (Gdx.input.isKeyJustPressed(Input.Keys.DOWN) && direction.y != 1)
-            direction.set(0, -1);
+            nextDirection.set(0, -1);
         if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT) && direction.x != 1)
-            direction.set(-1, 0);
+            nextDirection.set(-1, 0);
         if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT) && direction.x != -1)
-            direction.set(1, 0);
+            nextDirection.set(1, 0);
 
         // --- LÓGICA DE MOVIMENTO ---
         float deltaTime = Gdx.graphics.getDeltaTime();
@@ -183,6 +187,9 @@ public class SnakeGame extends ApplicationAdapter {
 
         if (timer > 0.05f) { // Só move a cada 0.05 segundos (dita a velocidade do jogo)
             timer = 0; // Zera o relógio
+
+            // Aplica o próximo movimento bufferizado — só aqui a direção é confirmada
+            direction.set(nextDirection);
 
             // Pega a posição atual da cabeça e calcula pra onde ela vai agora
             Vector2 head = snake.getFirst();
