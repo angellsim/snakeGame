@@ -70,6 +70,7 @@ Se você quiser rodar pelo código fonte:
 | **Mover para Baixo** | `Seta para Baixo (DOWN)` |
 | **Mover para Esquerda** | `Seta para Esquerda (LEFT)` |
 | **Mover para Direita** | `Seta para Direita (RIGHT)` |
+| **Sair do jogo** | `ESC` |
 
 ---
 
@@ -82,4 +83,4 @@ Durante o desenvolvimento deste jogo, foram explorados diversos conceitos import
 - **Estruturas de Dados:** Uso estratégico da `LinkedList` em Java para simular o corpo da cobra, inserindo a cabeça na frente e removendo o último segmento ao andar.
 
 ---
-Feito com ☕ e muito código por **[Alice (Angellsim)](https://github.com/angellsim)** e **[Hugo Santos (Guguim)](https://github.com/guguim)**!
+Feito com ☕ e muito código por **[Alice (Angellsim)](https://github.com/angellsim)** e **[Hugo (Guguim)](https://github.com/guguim)**!
