@@ -19,27 +19,28 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 public class SnakeGame extends ApplicationAdapter {
 
     // --- PIXEL ART MAPS (8x8 grid, cada célula = bloco 4x4 px no tile 32x32) ---
-    // Maçã: 0=bg, 1=vermelho escuro, 2=vermelho, 3=highlight (animado), 4=folha verde, 5=cabo marrom
+    // Maçã: 0=bg, 1=vermelho escuro, 2=vermelho, 3=highlight (animado), 4=folha
+    // verde, 5=cabo marrom
     private static final int[][] APPLE_MAP = {
-        {0, 0, 0, 5, 4, 0, 0, 0},
-        {0, 0, 0, 5, 4, 4, 0, 0},
-        {0, 1, 1, 2, 2, 2, 1, 0},
-        {1, 2, 2, 3, 2, 2, 2, 1},
-        {1, 2, 3, 2, 2, 2, 2, 1},
-        {1, 2, 2, 2, 2, 2, 1, 0},
-        {0, 1, 2, 2, 2, 1, 0, 0},
-        {0, 0, 1, 1, 1, 0, 0, 0},
+            { 0, 0, 0, 5, 4, 0, 0, 0 },
+            { 0, 0, 0, 5, 4, 4, 0, 0 },
+            { 0, 1, 1, 2, 2, 2, 1, 0 },
+            { 1, 2, 2, 3, 2, 2, 2, 1 },
+            { 1, 2, 3, 2, 2, 2, 2, 1 },
+            { 1, 2, 2, 2, 2, 2, 1, 0 },
+            { 0, 1, 2, 2, 2, 1, 0, 0 },
+            { 0, 0, 1, 1, 1, 0, 0, 0 },
     };
     // Corpo da cobra: 0=border escuro, 1=verde corpo, 2=highlight claro
     private static final int[][] BODY_MAP = {
-        {0, 0, 1, 1, 1, 1, 0, 0},
-        {0, 1, 2, 1, 1, 1, 1, 0},
-        {1, 1, 2, 2, 1, 1, 1, 1},
-        {1, 1, 1, 1, 1, 0, 1, 1},
-        {1, 1, 0, 1, 1, 1, 1, 1},
-        {1, 1, 1, 1, 2, 2, 1, 1},
-        {0, 1, 1, 1, 1, 2, 1, 0},
-        {0, 0, 1, 1, 1, 1, 0, 0},
+            { 0, 0, 1, 1, 1, 1, 0, 0 },
+            { 0, 1, 2, 1, 1, 1, 1, 0 },
+            { 1, 1, 2, 2, 1, 1, 1, 1 },
+            { 1, 1, 1, 1, 1, 0, 1, 1 },
+            { 1, 1, 0, 1, 1, 1, 1, 1 },
+            { 1, 1, 1, 1, 2, 2, 1, 1 },
+            { 0, 1, 1, 1, 1, 2, 1, 0 },
+            { 0, 0, 1, 1, 1, 1, 0, 0 },
     };
 
     private ShapeRenderer shapeRenderer;
@@ -55,6 +56,7 @@ public class SnakeGame extends ApplicationAdapter {
     private int gridRows; // Quantidade de linhas da grade (calculado em create())
     private float timer = 0; // Para controlar a velocidade da cobra
     private boolean isGameOver = false; // verifica se o player perdeu o jogo
+    private boolean isVictory = false; // verifica se o player ganhou o jogo
     private boolean hasGameStarted = false;
     private int score = 0; // qtd de pontos q ele fez
     private int highScore = 0; // maior qtd de pontos q ele fez
@@ -123,6 +125,7 @@ public class SnakeGame extends ApplicationAdapter {
 
         timer = 0;
         isGameOver = false;
+        isVictory = false;
         score = 0;
         normalApplesEaten = 0;
         boostApplesLeft = 0;
@@ -161,9 +164,37 @@ public class SnakeGame extends ApplicationAdapter {
             ScreenUtils.clear(0, 0, 0, 1);
             batch.begin();
 
-            // Usamos GlyphLayout para calcular a largura exata de cada texto e centralizar
-            // perfeitamente
             GlyphLayout layout = new GlyphLayout();
+
+            if (isVictory) {
+                fontGameOver.setColor(Color.GOLD);
+                layout.setText(fontGameOver, "VICTORY");
+                fontGameOver.draw(batch, "VICTORY", (Gdx.graphics.getWidth() - layout.width) / 2f,
+                        Gdx.graphics.getHeight() / 2f + 90);
+
+                fontScore.setColor(Color.WHITE);
+                layout.setText(fontScore, "PONTOS: " + score);
+                fontScore.draw(batch, "PONTOS: " + score, (Gdx.graphics.getWidth() - layout.width) / 2f,
+                        Gdx.graphics.getHeight() / 2f + 40);
+
+                fontInstruction.setColor(Color.WHITE);
+                layout.setText(fontInstruction, "Pressione ESPACO para reiniciar");
+                fontInstruction.draw(batch, "Pressione ESPACO para reiniciar",
+                        (Gdx.graphics.getWidth() - layout.width) / 2f, Gdx.graphics.getHeight() / 2f - 10);
+                
+                layout.setText(fontInstruction, "Pressione ESC para sair");
+                fontInstruction.draw(batch, "Pressione ESC para sair",
+                        (Gdx.graphics.getWidth() - layout.width) / 2f, Gdx.graphics.getHeight() / 2f - 40);
+
+                batch.end();
+
+                if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+                    initGame();
+                } else if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+                    Gdx.app.exit();
+                }
+                return;
+            }
 
             // Desenha a mensagem de Game Over no centro e um pouco para cima
             fontGameOver.setColor(Color.RED);
@@ -177,20 +208,26 @@ public class SnakeGame extends ApplicationAdapter {
             fontInstruction.draw(batch, "Pressione ESPACO para reiniciar",
                     (Gdx.graphics.getWidth() - layout.width) / 2f, Gdx.graphics.getHeight() / 2f + 10);
 
+            layout.setText(fontInstruction, "Pressione ESC para sair");
+            fontInstruction.draw(batch, "Pressione ESC para sair",
+                    (Gdx.graphics.getWidth() - layout.width) / 2f, Gdx.graphics.getHeight() / 2f - 20);
+
             // Desenha a pontuação final e o recorde logo abaixo
             fontScore.setColor(Color.YELLOW);
             layout.setText(fontScore, "PONTOS: " + score);
             fontScore.draw(batch, "PONTOS: " + score, (Gdx.graphics.getWidth() - layout.width) / 2f,
-                    Gdx.graphics.getHeight() / 2f - 40);
+                    Gdx.graphics.getHeight() / 2f - 50);
 
             layout.setText(fontScore, "RECORD: " + highScore);
             fontScore.draw(batch, "RECORD: " + highScore, (Gdx.graphics.getWidth() - layout.width) / 2f,
-                    Gdx.graphics.getHeight() / 2f - 70);
+                    Gdx.graphics.getHeight() / 2f - 80);
 
             batch.end();
 
             if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
                 initGame();
+            } else if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+                Gdx.app.exit();
             }
             return;
         }
@@ -294,6 +331,16 @@ public class SnakeGame extends ApplicationAdapter {
 
                 score += pointsGained; // Aumenta a pontuação
 
+                if (score >= 5000) {
+                    isVictory = true;
+                    isGameOver = true;
+                    if (score > highScore) {
+                        highScore = score;
+                        prefs.putInteger("highscore", highScore);
+                        prefs.flush(); // Salva no disco imediatamente
+                    }
+                }
+
                 // Prepara o texto flutuante no local da maçã
                 floatingText = "+" + pointsGained;
                 floatingTextX = newHead.x * TILE_SIZE;
@@ -313,7 +360,7 @@ public class SnakeGame extends ApplicationAdapter {
 
         // 1. Maçã — mapa de pixels com highlight piscando
         // O highlight (código 3) alterna entre rosa e branco usando skinTimer
-        boolean highlightOn = ((int)(skinTimer * 3f) % 2) == 0;
+        boolean highlightOn = ((int) (skinTimer * 3f) % 2) == 0;
         float ax = apple.x * TILE_SIZE;
         float ay = apple.y * TILE_SIZE;
         for (int row = 0; row < G; row++) {
@@ -322,16 +369,28 @@ public class SnakeGame extends ApplicationAdapter {
             for (int col = 0; col < G; col++) {
                 int code = APPLE_MAP[row][col];
                 switch (code) {
-                    case 0: continue; // transparente
-                    case 1: shapeRenderer.setColor(0.50f, 0.04f, 0.04f, 1f); break; // vermelho escuro
-                    case 2: shapeRenderer.setColor(0.88f, 0.14f, 0.14f, 1f); break; // vermelho
+                    case 0:
+                        continue; // transparente
+                    case 1:
+                        shapeRenderer.setColor(0.50f, 0.04f, 0.04f, 1f);
+                        break; // vermelho escuro
+                    case 2:
+                        shapeRenderer.setColor(0.88f, 0.14f, 0.14f, 1f);
+                        break; // vermelho
                     case 3: // highlight piscante
-                        if (highlightOn) shapeRenderer.setColor(1.00f, 0.75f, 0.75f, 1f);
-                        else             shapeRenderer.setColor(0.95f, 0.50f, 0.50f, 1f);
+                        if (highlightOn)
+                            shapeRenderer.setColor(1.00f, 0.75f, 0.75f, 1f);
+                        else
+                            shapeRenderer.setColor(0.95f, 0.50f, 0.50f, 1f);
                         break;
-                    case 4: shapeRenderer.setColor(0.10f, 0.60f, 0.10f, 1f); break; // folha
-                    case 5: shapeRenderer.setColor(0.40f, 0.22f, 0.05f, 1f); break; // cabo
-                    default: continue;
+                    case 4:
+                        shapeRenderer.setColor(0.10f, 0.60f, 0.10f, 1f);
+                        break; // folha
+                    case 5:
+                        shapeRenderer.setColor(0.40f, 0.22f, 0.05f, 1f);
+                        break; // cabo
+                    default:
+                        continue;
                 }
                 shapeRenderer.rect(ax + col * P, ry, P, P);
             }
@@ -348,23 +407,38 @@ public class SnakeGame extends ApplicationAdapter {
                 for (int row = 0; row < G; row++) {
                     float ry = py + (G - 1 - row) * P;
                     for (int col = 0; col < G; col++) {
-                        boolean border = (row == 0 || row == G-1 || col == 0 || col == G-1);
-                        if (border) shapeRenderer.setColor(0.05f, 0.45f, 0.05f, 1f);
-                        else        shapeRenderer.setColor(0.28f, 0.92f, 0.28f, 1f);
+                        boolean border = (row == 0 || row == G - 1 || col == 0 || col == G - 1);
+                        if (border)
+                            shapeRenderer.setColor(0.05f, 0.45f, 0.05f, 1f);
+                        else
+                            shapeRenderer.setColor(0.28f, 0.92f, 0.28f, 1f);
                         shapeRenderer.rect(px + col * P, ry, P, P);
                     }
                 }
-                // Olhos: dois blocos 2×2 pixels; brilhinho branco no canto superior direito do olho
+                // Olhos: dois blocos 2×2 pixels; brilhinho branco no canto superior direito do
+                // olho
                 // A posição (em células da grade) depende da direção
                 int e1c, e1r, e2c, e2r;
-                if (direction.x == 1) {       // → direita
-                    e1c = 5; e1r = 2; e2c = 5; e2r = 5;
+                if (direction.x == 1) { // → direita
+                    e1c = 5;
+                    e1r = 2;
+                    e2c = 5;
+                    e2r = 5;
                 } else if (direction.x == -1) { // ← esquerda
-                    e1c = 2; e1r = 2; e2c = 2; e2r = 5;
+                    e1c = 2;
+                    e1r = 2;
+                    e2c = 2;
+                    e2r = 5;
                 } else if (direction.y == 1) { // ↑ cima
-                    e1c = 2; e1r = 2; e2c = 5; e2r = 2;
-                } else {                        // ↓ baixo
-                    e1c = 2; e1r = 5; e2c = 5; e2r = 5;
+                    e1c = 2;
+                    e1r = 2;
+                    e2c = 5;
+                    e2r = 2;
+                } else { // ↓ baixo
+                    e1c = 2;
+                    e1r = 5;
+                    e2c = 5;
+                    e2r = 5;
                 }
                 // Pupila preta (2×2 pixels)
                 shapeRenderer.setColor(0.05f, 0.05f, 0.05f, 1f);
@@ -383,10 +457,17 @@ public class SnakeGame extends ApplicationAdapter {
                     for (int col = 0; col < G; col++) {
                         int code = BODY_MAP[row][col];
                         switch (code) {
-                            case 0: shapeRenderer.setColor(0.04f, 0.35f, 0.04f, 1f); break; // border
-                            case 1: shapeRenderer.setColor(0.12f, 0.65f, 0.12f, 1f); break; // corpo
-                            case 2: shapeRenderer.setColor(0.22f, 0.80f, 0.22f, 1f); break; // highlight
-                            default: continue;
+                            case 0:
+                                shapeRenderer.setColor(0.04f, 0.35f, 0.04f, 1f);
+                                break; // border
+                            case 1:
+                                shapeRenderer.setColor(0.12f, 0.65f, 0.12f, 1f);
+                                break; // corpo
+                            case 2:
+                                shapeRenderer.setColor(0.22f, 0.80f, 0.22f, 1f);
+                                break; // highlight
+                            default:
+                                continue;
                         }
                         shapeRenderer.rect(px + col * P, ry, P, P);
                     }
