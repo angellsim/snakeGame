@@ -15,6 +15,7 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFont
 import com.badlogic.gdx.Preferences;
 import java.util.LinkedList;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
+import com.badlogic.gdx.audio.Sound;
 
 public class SnakeGame extends ApplicationAdapter {
 
@@ -72,6 +73,11 @@ public class SnakeGame extends ApplicationAdapter {
     private float floatingTextTimer = 0;
     private float skinTimer = 0f; // Timer contínuo para animações visuais (maçã pulsante, etc.)
 
+    private Sound appleSound;
+    private Sound boostSound;
+    private Sound gameOverSound;
+    private Sound victorySound;
+
     @Override
     public void create() {
         // Ao invés de imagens complexas, usamos ShapeRenderer para desenhar quadrados
@@ -106,6 +112,11 @@ public class SnakeGame extends ApplicationAdapter {
         // Usar campos garante que wrapping e spawn da maçã nunca divergem.
         gridCols = Gdx.graphics.getWidth() / TILE_SIZE; // ex: 640 / 32 = 20
         gridRows = Gdx.graphics.getHeight() / TILE_SIZE; // ex: 480 / 32 = 15
+
+        appleSound = Gdx.audio.newSound(Gdx.files.internal("apple.wav"));
+        boostSound = Gdx.audio.newSound(Gdx.files.internal("boost.wav"));
+        gameOverSound = Gdx.audio.newSound(Gdx.files.internal("gameover.wav"));
+        victorySound = Gdx.audio.newSound(Gdx.files.internal("victory.wav"));
 
         initGame();
     }
@@ -181,7 +192,7 @@ public class SnakeGame extends ApplicationAdapter {
                 layout.setText(fontInstruction, "Pressione ESPACO para reiniciar");
                 fontInstruction.draw(batch, "Pressione ESPACO para reiniciar",
                         (Gdx.graphics.getWidth() - layout.width) / 2f, Gdx.graphics.getHeight() / 2f - 10);
-                
+
                 layout.setText(fontInstruction, "Pressione ESC para sair");
                 fontInstruction.draw(batch, "Pressione ESC para sair",
                         (Gdx.graphics.getWidth() - layout.width) / 2f, Gdx.graphics.getHeight() / 2f - 40);
@@ -295,6 +306,7 @@ public class SnakeGame extends ApplicationAdapter {
             // Verifica se bateu no próprio corpo
             if (snake.contains(newHead)) {
                 isGameOver = true;
+                gameOverSound.play(1.0f); // volume no maximo
 
                 // Atualiza e salva o recorde se a pontuação atual for maior
                 if (score > highScore) {
@@ -320,8 +332,10 @@ public class SnakeGame extends ApplicationAdapter {
                 if (boostApplesLeft > 0) {
                     pointsGained = 150;
                     boostApplesLeft--;
+                    boostSound.play(1.0f);
                 } else {
                     normalApplesEaten++;
+                    appleSound.play(1.0f);
                     if (normalApplesEaten == 5) {
                         // Após comer 5 normais, ativa o boost para as próximas 3
                         boostApplesLeft = 3;
@@ -334,6 +348,7 @@ public class SnakeGame extends ApplicationAdapter {
                 if (score >= 5000) {
                     isVictory = true;
                     isGameOver = true;
+                    victorySound.play(1.0f);
                     if (score > highScore) {
                         highScore = score;
                         prefs.putInteger("highscore", highScore);
@@ -505,5 +520,9 @@ public class SnakeGame extends ApplicationAdapter {
         fontGameOver.dispose();
         fontInstruction.dispose();
         fontScore.dispose();
+        appleSound.dispose();
+        boostSound.dispose();
+        gameOverSound.dispose();
+        victorySound.dispose();
     }
 }
